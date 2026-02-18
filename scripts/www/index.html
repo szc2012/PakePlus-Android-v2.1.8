@@ -1,11 +1,548 @@
 <!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>PakePlus</title>
-    </head>
-    <body>
-        PakePlus
-    </body>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>华为计算器</title>
+    <style>
+        /* ==================== 全局样式 ==================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        /* ==================== 计算器容器 ==================== */
+        .calculator {
+            width: 100%;
+            max-width: 400px;
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+            overflow: hidden;
+        }
+
+        /* ==================== 显示区域 ==================== */
+        .display-area {
+            padding: 30px 20px;
+            background: #ffffff;
+            text-align: right;
+        }
+
+        /* 历史记录行 */
+        .history-row {
+            font-size: 18px;
+            color: #888888;
+            min-height: 27px;
+            margin-bottom: 8px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* 主显示区 */
+        .main-display {
+            font-size: 48px;
+            color: #333333;
+            font-weight: 300;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            min-height: 72px;
+        }
+
+        /* ==================== 按钮区域 ==================== */
+        .button-area {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            padding: 15px;
+            background: #ffffff;
+        }
+
+        /* 按钮基础样式 */
+        .btn {
+            height: 80px;
+            border: none;
+            border-radius: 12px;
+            font-size: 28px;
+            font-weight: 400;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            user-select: none;
+        }
+
+        /* 按钮按下效果 */
+        .btn:active {
+            opacity: 0.8;
+            background: #d0d0d0 !important;
+            transform: scale(0.98);
+        }
+
+        /* 数字键 - 白色 */
+        .btn-number {
+            background: #ffffff;
+            color: #333333;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        /* 运算符键 - 浅灰 */
+        .btn-operator {
+            background: #f7f7f7;
+            color: #ff6d00;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        /* 特殊键 - 浅灰 */
+        .btn-special {
+            background: #f2f2f2;
+            color: #333333;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        /* 等号键 - 橙色 */
+        .btn-equal {
+            background: #ff6d00;
+            color: #ffffff;
+            box-shadow: 0 2px 8px rgba(255, 109, 0, 0.3);
+        }
+
+        /* 零按钮 - 占2列 */
+        .btn-zero {
+            grid-column: span 2;
+        }
+
+        /* ==================== 响应式适配 ==================== */
+        @media (max-width: 360px) {
+            .btn {
+                height: 70px;
+                font-size: 24px;
+            }
+            .main-display {
+                font-size: 40px;
+            }
+            .history-row {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <!-- 显示区域 -->
+        <div class="display-area">
+            <div class="history-row" id="historyRow"></div>
+            <div class="main-display" id="mainDisplay">0</div>
+        </div>
+
+        <!-- 按钮区域 -->
+        <div class="button-area">
+            <!-- 第一行 -->
+            <button class="btn btn-special" data-action="clear">C</button>
+            <button class="btn btn-special" data-action="percent">%</button>
+            <button class="btn btn-special" data-action="backspace">⌫</button>
+            <button class="btn btn-operator" data-action="divide">÷</button>
+
+            <!-- 第二行 -->
+            <button class="btn btn-number" data-value="7">7</button>
+            <button class="btn btn-number" data-value="8">8</button>
+            <button class="btn btn-number" data-value="9">9</button>
+            <button class="btn btn-operator" data-action="multiply">×</button>
+
+            <!-- 第三行 -->
+            <button class="btn btn-number" data-value="4">4</button>
+            <button class="btn btn-number" data-value="5">5</button>
+            <button class="btn btn-number" data-value="6">6</button>
+            <button class="btn btn-operator" data-action="subtract">−</button>
+
+            <!-- 第四行 -->
+            <button class="btn btn-number" data-value="1">1</button>
+            <button class="btn btn-number" data-value="2">2</button>
+            <button class="btn btn-number" data-value="3">3</button>
+            <button class="btn btn-operator" data-action="add">+</button>
+
+            <!-- 第五行 -->
+            <button class="btn btn-number btn-zero" data-value="0">0</button>
+            <button class="btn btn-number" data-value=".">.</button>
+            <button class="btn btn-equal" data-action="equal">=</button>
+        </div>
+    </div>
+
+    <script>
+        // ==================== 计算器状态管理 ====================
+        const state = {
+            currentInput: '0',      // 当前输入的数字
+            previousInput: null,    // 上一次输入的数字
+            operator: null,         // 当前运算符
+            history: '',            // 历史记录显示
+            shouldResetInput: false, // 是否应该重置输入
+            isError: false,         // 是否错误状态
+            
+            // 时间魔术数字状态（后台运行，无提示）
+            magicStep: 0,           // 0:初始, 1:第一个4位数, 2:第二个4位数, 3:生成中
+            magicFirstNum: null,    // 第一个魔术数字
+            magicSecondNum: null    // 第二个魔术数字
+        };
+
+        // ==================== DOM元素引用 ====================
+        const mainDisplay = document.getElementById('mainDisplay');
+        const historyRow = document.getElementById('historyRow');
+
+        // ==================== 获取当前时间数字(MMDDHHmm) ====================
+        function getCurrentTimeNumber() {
+            const now = new Date();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            return parseInt(month + day + hours + minutes);
+        }
+
+        // ==================== 更新显示 ====================
+        function updateDisplay() {
+            // 更新主显示
+            if (state.isError) {
+                mainDisplay.textContent = '错误';
+            } else {
+                // 格式化数字显示（避免过长）
+                let displayValue = state.currentInput;
+                if (displayValue.length > 12) {
+                    displayValue = parseFloat(displayValue).toExponential(6);
+                }
+                mainDisplay.textContent = displayValue;
+            }
+
+            // 更新历史记录
+            historyRow.textContent = state.history;
+        }
+
+        // ==================== 输入数字 ====================
+        function inputNumber(num) {
+            if (state.isError) {
+                clearAll();
+            }
+
+            // 魔术数字逻辑处理
+            if (state.magicStep === 1 || state.magicStep === 2) {
+                // 检查是否达到4位数
+                const currentLen = state.currentInput.replace('-', '').length;
+                if (currentLen >= 4 && state.shouldResetInput) {
+                    // 已经输入完4位数，需要开始新的输入
+                    state.currentInput = num;
+                    state.shouldResetInput = false;
+                } else {
+                    if (state.shouldResetInput || state.currentInput === '0') {
+                        state.currentInput = num;
+                        state.shouldResetInput = false;
+                    } else {
+                        state.currentInput += num;
+                    }
+                }
+
+                // 检查是否达到4位数
+                const newLen = state.currentInput.replace('-', '').length;
+                if (newLen >= 4 && state.magicStep === 1) {
+                    state.magicFirstNum = parseFloat(state.currentInput);
+                    state.magicStep = 2;
+                    state.history = `${state.magicFirstNum} +`;
+                } else if (newLen >= 4 && state.magicStep === 2) {
+                    state.magicSecondNum = parseFloat(state.currentInput);
+                    state.magicStep = 3;
+                    state.history = `${state.magicFirstNum} + ${state.magicSecondNum} +`;
+                }
+            } else if (state.magicStep === 3) {
+                // 自动计算魔术数字
+                if (state.shouldResetInput || state.currentInput === '0') {
+                    state.currentInput = num;
+                    state.shouldResetInput = false;
+                } else {
+                    state.currentInput += num;
+                }
+                // 自动计算并显示结果
+                calculateMagicNumber();
+            } else {
+                // 正常输入模式
+                if (state.shouldResetInput || state.currentInput === '0') {
+                    state.currentInput = num;
+                    state.shouldResetInput = false;
+                } else {
+                    // 限制最大长度
+                    if (state.currentInput.length < 15) {
+                        state.currentInput += num;
+                    }
+                }
+            }
+
+            updateDisplay();
+        }
+
+        // ==================== 输入小数点 ====================
+        function inputDecimal() {
+            if (state.isError) {
+                clearAll();
+            }
+
+            if (state.shouldResetInput) {
+                state.currentInput = '0.';
+                state.shouldResetInput = false;
+            } else if (!state.currentInput.includes('.')) {
+                state.currentInput += '.';
+            }
+
+            updateDisplay();
+        }
+
+        // ==================== 设置运算符 ====================
+        function setOperator(op) {
+            if (state.isError) {
+                clearAll();
+            }
+
+            const displayOp = op === 'multiply' ? '×' : op === 'divide' ? '÷' : op === 'subtract' ? '−' : '+';
+
+            // 魔术数字特殊处理
+            if (state.magicStep > 0 && op === 'add') {
+                if (state.magicStep === 2 && state.magicSecondNum !== null) {
+                    // 第二个数已输入，准备进入自动计算模式
+                    state.magicStep = 3;
+                    state.operator = op;
+                    state.history = `${state.magicFirstNum} + ${state.magicSecondNum} +`;
+                    state.shouldResetInput = true;
+                    state.currentInput = '0';
+                    updateDisplay();
+                    return;
+                }
+            }
+
+            // 正常运算符处理
+            if (state.operator && !state.shouldResetInput) {
+                calculate();
+            }
+
+            state.operator = op;
+            state.previousInput = state.currentInput;
+            state.history = `${state.previousInput} ${displayOp}`;
+            state.shouldResetInput = true;
+
+            // 检查是否触发魔术数字
+            if (state.magicStep === 0 && op === 'add') {
+                const numValue = parseFloat(state.currentInput);
+                if (Number.isInteger(numValue) && numValue >= 1000 && numValue <= 9999) {
+                    state.magicStep = 1;
+                    state.magicFirstNum = numValue;
+                }
+            }
+
+            updateDisplay();
+        }
+
+        // ==================== 计算魔术数字 ====================
+        function calculateMagicNumber() {
+            if (state.magicStep === 3 && state.magicFirstNum !== null && state.magicSecondNum !== null) {
+                const timeNum = getCurrentTimeNumber();
+                const magicResult = timeNum - state.magicFirstNum - state.magicSecondNum;
+                state.currentInput = String(magicResult);
+                state.history = `${state.magicFirstNum} + ${state.magicSecondNum} + = ${timeNum}`;
+                updateDisplay();
+            }
+        }
+
+        // ==================== 执行计算 ====================
+        function calculate() {
+            if (!state.operator || state.previousInput === null) return;
+
+            const prev = parseFloat(state.previousInput);
+            const current = parseFloat(state.currentInput);
+            let result;
+
+            switch (state.operator) {
+                case 'add':
+                    result = prev + current;
+                    break;
+                case 'subtract':
+                    result = prev - current;
+                    break;
+                case 'multiply':
+                    result = prev * current;
+                    break;
+                case 'divide':
+                    if (current === 0) {
+                        state.isError = true;
+                        state.history = '除数不能为0';
+                        resetMagicState();
+                        updateDisplay();
+                        return;
+                    }
+                    result = prev / current;
+                    break;
+                default:
+                    return;
+            }
+
+            // 处理浮点数精度问题
+            result = Math.round(result * 1000000000) / 1000000000;
+
+            // 如果是魔术数字模式且点击等号
+            if (state.magicStep === 3) {
+                const timeNum = getCurrentTimeNumber();
+                state.currentInput = String(timeNum);
+                state.history = `${state.magicFirstNum} + ${state.magicSecondNum} = ${timeNum}`;
+                resetMagicState();
+            } else {
+                state.currentInput = String(result);
+                state.history = `${prev} ${getOperatorSymbol()} ${current} =`;
+            }
+
+            state.previousInput = null;
+            state.operator = null;
+            state.shouldResetInput = true;
+
+            updateDisplay();
+        }
+
+        // ==================== 获取运算符符号 ====================
+        function getOperatorSymbol() {
+            switch (state.operator) {
+                case 'add': return '+';
+                case 'subtract': return '−';
+                case 'multiply': return '×';
+                case 'divide': return '÷';
+                default: return '';
+            }
+        }
+
+        // ==================== 百分比计算 ====================
+        function calculatePercent() {
+            if (state.isError) return;
+
+            const current = parseFloat(state.currentInput);
+            state.currentInput = String(current / 100);
+            state.history = `${current}%`;
+            state.shouldResetInput = true;
+
+            updateDisplay();
+        }
+
+        // ==================== 退格 ====================
+        function backspace() {
+            if (state.isError) {
+                clearAll();
+                return;
+            }
+
+            if (state.shouldResetInput) return;
+
+            if (state.currentInput.length > 1) {
+                state.currentInput = state.currentInput.slice(0, -1);
+            } else {
+                state.currentInput = '0';
+            }
+
+            updateDisplay();
+        }
+
+        // ==================== 清空所有 ====================
+        function clearAll() {
+            state.currentInput = '0';
+            state.previousInput = null;
+            state.operator = null;
+            state.history = '';
+            state.shouldResetInput = false;
+            state.isError = false;
+            resetMagicState();
+
+            updateDisplay();
+        }
+
+        // ==================== 重置魔术状态 ====================
+        function resetMagicState() {
+            state.magicStep = 0;
+            state.magicFirstNum = null;
+            state.magicSecondNum = null;
+        }
+
+        // ==================== 事件绑定 ====================
+        document.querySelectorAll('.btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                // 数字键
+                if (btn.dataset.value !== undefined) {
+                    if (btn.dataset.value === '.') {
+                        inputDecimal();
+                    } else {
+                        inputNumber(btn.dataset.value);
+                    }
+                }
+                // 功能键
+                else if (btn.dataset.action) {
+                    const action = btn.dataset.action;
+                    switch (action) {
+                        case 'clear':
+                            clearAll();
+                            break;
+                        case 'backspace':
+                            backspace();
+                            break;
+                        case 'percent':
+                            calculatePercent();
+                            break;
+                        case 'equal':
+                            calculate();
+                            break;
+                        case 'add':
+                        case 'subtract':
+                        case 'multiply':
+                        case 'divide':
+                            setOperator(action);
+                            break;
+                    }
+                }
+            });
+        });
+
+        // ==================== 键盘支持 ====================
+        document.addEventListener('keydown', (e) => {
+            if (e.key >= '0' && e.key <= '9') {
+                inputNumber(e.key);
+            } else if (e.key === '.') {
+                inputDecimal();
+            } else if (e.key === '+') {
+                setOperator('add');
+            } else if (e.key === '-') {
+                setOperator('subtract');
+            } else if (e.key === '*') {
+                setOperator('multiply');
+            } else if (e.key === '/') {
+                e.preventDefault();
+                setOperator('divide');
+            } else if (e.key === 'Enter' || e.key === '=') {
+                calculate();
+            } else if (e.key === 'Backspace') {
+                backspace();
+            } else if (e.key === 'Escape' || e.key === 'c' || e.key === 'C') {
+                clearAll();
+            } else if (e.key === '%') {
+                calculatePercent();
+            }
+        });
+
+        // ==================== 初始化 ====================
+        updateDisplay();
+    </script>
+</body>
 </html>
+
+
