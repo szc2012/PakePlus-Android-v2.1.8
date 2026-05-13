@@ -1,11 +1,794 @@
 <!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>PakePlus-Android</title>
-    </head>
-    <body>
-        <h1>PakePlus-Android</h1>
-    </body>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>齐秦快跑</title>
+    <script src="gsap.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow: hidden;
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: #5c94fc;
+        }
+
+        #game-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .bg-layer {
+            position: absolute;
+            width: 200%;
+            height: 100%;
+            background: #5c94fc;
+        }
+
+        .cloud {
+            position: absolute;
+            width: 80px;
+            height: 40px;
+            background: white;
+            border-radius: 40px;
+            opacity: 1;
+        }
+
+        .cloud::before {
+            content: '';
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: white;
+            border-radius: 50%;
+            top: -25px;
+            left: 10px;
+        }
+
+        .cloud::after {
+            content: '';
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: white;
+            border-radius: 50%;
+            top: -15px;
+            right: 10px;
+        }
+
+        #ground {
+            position: absolute;
+            bottom: 0;
+            width: 200%;
+            height: 80px;
+            background: #c84c0c;
+            border-top: 4px solid #000;
+        }
+
+        .grass {
+            position: absolute;
+            top: -8px;
+            width: 100%;
+            height: 12px;
+            background: repeating-linear-gradient(
+                90deg,
+                #00aa00 0px,
+                #00cc00 20px,
+                #00aa00 40px
+            );
+            border-top: 2px solid #000;
+        }
+
+        #player {
+            position: absolute;
+            bottom: 80px;
+            left: 100px;
+            width: 67px;
+            height: 93px;
+            z-index: 100;
+        }
+
+        #player img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .falling-tooth {
+            position: absolute;
+            width: 8px;
+            height: 10px;
+            background: white;
+            border-radius: 0 0 4px 4px;
+            border: 1px solid #ccc;
+            z-index: 200;
+        }
+
+        #obstacles {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .obstacle {
+            position: absolute;
+            bottom: 80px;
+            z-index: 50;
+        }
+
+        .tennis-net {
+            width: 20px;
+            height: 100px;
+            background: repeating-linear-gradient(
+                0deg,
+                #333 0px,
+                #333 2px,
+                transparent 2px,
+                transparent 8px
+            ),
+            repeating-linear-gradient(
+                90deg,
+                #333 0px,
+                #333 2px,
+                transparent 2px,
+                transparent 8px
+            );
+            border: 3px solid #666;
+            border-radius: 3px;
+        }
+
+        .tennis-net::before {
+            content: '';
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 20px;
+            background: #FF6600;
+            border-radius: 50% 50% 0 0;
+        }
+
+        .candy {
+            width: 50px;
+            height: 50px;
+            font-size: 40px;
+            line-height: 50px;
+            text-align: center;
+        }
+
+        .candy::before {
+            content: '🍬';
+        }
+
+        .wang-jiuxiao {
+            width: 50px;
+            height: 60px;
+            position: absolute;
+            bottom: 80px;
+        }
+
+        .wang-jiuxiao .wjx-name {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            color: #fff;
+            background: #000;
+            padding: 2px 6px;
+            border: 1px solid #fff;
+            white-space: nowrap;
+            font-weight: bold;
+        }
+
+        .wang-jiuxiao .wjx-body {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #00aa00 0%, #00cc00 100%);
+            border: 2px solid #000;
+            border-radius: 8px;
+            position: relative;
+            margin: 0 auto;
+        }
+
+        .wang-jiuxiao .wjx-eye {
+            position: absolute;
+            width: 6px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            top: 10px;
+        }
+
+        .wang-jiuxiao .wjx-eye::after {
+            content: '';
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #000;
+            border-radius: 50%;
+            top: 2px;
+            left: 1px;
+        }
+
+        .wang-jiuxiao .wjx-eye.left { left: 6px; }
+        .wang-jiuxiao .wjx-eye.right { right: 6px; }
+
+        .wang-jiuxiao .wjx-mouth {
+            position: absolute;
+            width: 12px;
+            height: 6px;
+            background: #ff6b6b;
+            border-radius: 0 0 6px 6px;
+            bottom: 6px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .wang-jiuxiao .wjx-legs {
+            position: absolute;
+            bottom: -18px;
+            left: 5px;
+            width: 40px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .wang-jiuxiao .wjx-leg {
+            width: 12px;
+            height: 18px;
+            background: #4169E1;
+            border: 2px solid #000;
+            border-radius: 3px;
+        }
+
+        .ball {
+            width: 50px;
+            height: 50px;
+            font-size: 40px;
+            line-height: 50px;
+            text-align: center;
+        }
+
+        .ball::before {
+            content: '⚽';
+        }
+
+        .knife {
+            width: 50px;
+            height: 50px;
+            font-size: 40px;
+            line-height: 50px;
+            text-align: center;
+        }
+
+        .knife::before {
+            content: '🔪';
+        }
+
+        .bandage {
+            width: 50px;
+            height: 50px;
+            font-size: 40px;
+            line-height: 50px;
+            text-align: center;
+        }
+
+        .bandage::before {
+            content: '🩹';
+        }
+
+        .bullet {
+            width: 24px;
+            height: 24px;
+            font-size: 24px;
+            line-height: 24px;
+            text-align: center;
+        }
+
+        .bullet::before {
+            content: '🔥';
+        }
+
+        .bleeding-effect {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 24px;
+            display: none;
+        }
+
+        #ui-container {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            z-index: 200;
+        }
+
+        .ui-panel {
+            background: rgba(255,255,255,0.9);
+            padding: 15px 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            border: 3px solid #FFB6C1;
+        }
+
+        .health-bar-container {
+            width: 200px;
+        }
+
+        .health-label {
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .health-bar-bg {
+            width: 100%;
+            height: 25px;
+            background: #ddd;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid #999;
+        }
+
+        .health-bar {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #FF6B6B 0%, #FF0000 100%);
+            border-radius: 10px;
+            transition: width 0.3s;
+        }
+
+        .teeth-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .teeth-label {
+            font-size: 14px;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .teeth-icons {
+            display: flex;
+            gap: 3px;
+        }
+
+        .tooth-icon {
+            width: 12px;
+            height: 16px;
+            background: white;
+            border-radius: 0 0 6px 6px;
+            border: 2px solid #ccc;
+        }
+
+        .tooth-icon.lost {
+            background: #ddd;
+            opacity: 0.3;
+        }
+
+        .score-display {
+            font-size: 24px;
+            font-weight: bold;
+            color: #FF1493;
+        }
+
+        .distance-display {
+            font-size: 16px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        #game-over {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 300;
+        }
+
+        .game-over-panel {
+            background: linear-gradient(135deg, #FFB6C1 0%, #FF69B4 100%);
+            padding: 40px 60px;
+            border-radius: 20px;
+            text-align: center;
+            border: 5px solid #FF1493;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .game-over-title {
+            font-size: 48px;
+            color: white;
+            text-shadow: 3px 3px 0 #FF1493;
+            margin-bottom: 20px;
+        }
+
+        .final-score {
+            font-size: 28px;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .restart-btn {
+            padding: 15px 40px;
+            font-size: 20px;
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            color: #8B0000;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            transition: transform 0.2s;
+        }
+
+        .restart-btn:hover {
+            transform: scale(1.1);
+        }
+
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, #5c94fc 0%, #5c94fc 70%, #00aa00 70%, #00aa00 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 400;
+            overflow: hidden;
+        }
+
+        #start-screen::before {
+            content: '';
+            position: absolute;
+            top: 10%;
+            left: 10%;
+            width: 80px;
+            height: 40px;
+            background: white;
+            border-radius: 40px;
+            box-shadow: 
+                120px 20px 0 -5px white,
+                200px -10px 0 -10px white,
+                300px 30px 0 0 white,
+                500px 10px 0 -5px white,
+                650px -20px 0 -10px white;
+        }
+
+        #start-screen::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 30%;
+            background: 
+                repeating-linear-gradient(
+                    90deg,
+                    #c84c0c 0px,
+                    #c84c0c 40px,
+                    #000 40px,
+                    #000 42px,
+                    #c84c0c 42px,
+                    #c84c0c 82px,
+                    #000 82px,
+                    #000 84px
+                );
+            background-size: 84px 40px;
+            border-top: 4px solid #000;
+        }
+
+        .start-panel {
+            text-align: center;
+            position: relative;
+            z-index: 10;
+            background: rgba(0,0,0,0.7);
+            padding: 40px 50px;
+            border: 4px solid #fff;
+            border-radius: 10px;
+            box-shadow: 
+                0 0 0 4px #000,
+                8px 8px 0 rgba(0,0,0,0.5);
+        }
+
+        .game-title {
+            font-size: 56px;
+            color: #e70012;
+            text-shadow: 
+                4px 4px 0 #000,
+                -2px -2px 0 #000,
+                2px -2px 0 #000,
+                -2px 2px 0 #000,
+                2px 2px 0 #000,
+                6px 6px 0 rgba(0,0,0,0.3);
+            margin-bottom: 30px;
+            letter-spacing: 6px;
+            animation: titleBounce 1s ease-in-out infinite alternate;
+        }
+
+        @keyframes titleBounce {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-10px); }
+        }
+
+        .start-btn {
+            padding: 18px 50px;
+            font-size: 24px;
+            background: linear-gradient(180deg, #ffd700 0%, #ffa500 100%);
+            border: 4px solid #fff;
+            border-radius: 8px;
+            cursor: pointer;
+            color: #000;
+            font-weight: bold;
+            text-shadow: 1px 1px 0 rgba(255,255,255,0.5);
+            box-shadow: 
+                0 6px 0 #b8860b,
+                0 8px 10px rgba(0,0,0,0.3);
+            transition: all 0.1s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .start-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255,255,255,0.4),
+                transparent
+            );
+            animation: shine 2s infinite;
+        }
+
+        @keyframes shine {
+            0% { left: -100%; }
+            50%, 100% { left: 100%; }
+        }
+
+        .start-btn:hover {
+            transform: translateY(2px);
+            box-shadow: 
+                0 4px 0 #b8860b,
+                0 6px 8px rgba(0,0,0,0.3);
+        }
+
+        .start-btn:active {
+            transform: translateY(6px);
+            box-shadow: 
+                0 0 0 #b8860b,
+                0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .instructions {
+            margin-top: 25px;
+            background: rgba(0,0,0,0.85);
+            border: 3px solid #ffd700;
+            border-radius: 8px;
+            padding: 20px 25px;
+            max-width: 380px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        .instructions h3 {
+            color: #ffd700;
+            margin-bottom: 12px;
+            font-size: 18px;
+            text-shadow: 2px 2px 0 #000;
+            border-bottom: 2px solid #ffd700;
+            padding-bottom: 8px;
+        }
+
+        .instructions p {
+            color: #fff;
+            font-size: 13px;
+            line-height: 1.8;
+            text-align: left;
+        }
+
+        .instructions p span {
+            display: block;
+            padding: 6px 10px;
+            margin: 4px 0;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            border-left: 3px solid #e70012;
+            transition: all 0.2s;
+        }
+
+        .instructions p span:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateX(5px);
+        }
+
+        #player.hurt img {
+            filter: sepia(1) hue-rotate(-50deg) saturate(5);
+        }
+
+        #player.choking img {
+            filter: hue-rotate(90deg) saturate(2);
+        }
+
+        #player.healing img {
+            filter: sepia(1) hue-rotate(-10deg) saturate(3) brightness(1.2);
+        }
+
+        #player.dizzy img {
+            filter: hue-rotate(45deg) saturate(2) blur(1px);
+        }
+
+        .dizzy-stars {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+        }
+
+        .star {
+            position: absolute;
+            font-size: 20px;
+        }
+
+        .choking-effect {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 24px;
+            display: none;
+        }
+
+        .heal-effect {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 20px;
+            color: #FF1493;
+            display: none;
+            white-space: nowrap;
+        }
+
+        #logo-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 500;
+        }
+
+        .logo-image {
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div class="bg-layer" id="bg-layer"></div>
+        <div id="clouds"></div>
+        <div id="ground">
+            <div class="grass"></div>
+        </div>
+
+        <div id="player">
+            <img src="image.png" alt="齐秦">
+            <div class="dizzy-stars">
+                <span class="star" style="left: -15px;">⭐</span>
+                <span class="star" style="left: 5px;">⭐</span>
+                <span class="star" style="left: 25px;">⭐</span>
+            </div>
+            <div class="choking-effect">😵</div>
+            <div class="heal-effect">+❤️</div>
+            <div class="bleeding-effect">🩸</div>
+        </div>
+        
+        <div id="obstacles"></div>
+        
+        <div id="ui-container">
+            <div class="ui-panel health-bar-container">
+                <div class="health-label">❤️ 血量</div>
+                <div class="health-bar-bg">
+                    <div class="health-bar" id="health-bar"></div>
+                </div>
+            </div>
+            
+            <div class="ui-panel">
+                <div class="score-display">分数: <span id="score">0</span></div>
+                <div class="distance-display">距离: <span id="distance">0</span>m</div>
+            </div>
+            
+            <div class="ui-panel teeth-container">
+                <div class="teeth-label">🦷 牙齿:</div>
+                <div class="teeth-icons" id="teeth-icons"></div>
+            </div>
+        </div>
+        
+        <div id="game-over">
+            <div class="game-over-panel">
+                <div class="game-over-title">游戏结束!</div>
+                <div class="final-score">
+                    最终分数: <span id="final-score">0</span><br>
+                    跑步距离: <span id="final-distance">0</span>m
+                </div>
+                <button class="restart-btn" onclick="restartGame()">再来一次</button>
+            </div>
+        </div>
+        
+        <div id="start-screen">
+            <div class="start-panel">
+                <h1 class="game-title">齐秦快跑</h1>
+                <button class="start-btn" onclick="startGame()">开始游戏</button>
+                <button class="start-btn" onclick="showLevelSelect()" style="margin-top: 15px; background: linear-gradient(180deg, #87ceeb 0%, #4682b4 100%);">选择关卡</button>
+                <div class="instructions">
+                    <h3>游戏说明</h3>
+                    <p>
+                        <span>🎮 按空格键跳跃</span>
+                        <span>🏃 自动向前跑，躲避障碍物</span>
+                        <span>⚠️ 网球网：掉血掉牙</span>
+                        <span>🍬 糖果：噎住卡顿持续掉血</span>
+                        <span>✨ 王九骁：回血止血</span>
+                        <span>⚽ 球：晕倒停顿</span>
+                        <span>🔪 刀子：流血持续掉血</span>
+                        <span>🩹 绷带：止血回血</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div id="logo-screen">
+            <img src="copy.png" alt="Logo" class="logo-image">
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/levels.js"></script>
+    <script src="js/save.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/obstacles.js"></script>
+    <script src="js/boss.js"></script>
+    <script src="js/game.js"></script>
+    <script>
+        function showLevelSelect() {
+            UISystem.showLevelSelectScreen();
+        }
+    </script>
+</body>
 </html>
